@@ -287,9 +287,17 @@ for i in range(len(x)):
     
     z.append(decay(x[i], y[i]))
 
-# Making the map
+# Making the map in color and in black and white
 
 cmap = cm.rainbow
-plt.scatter(x, y, c = cmap(z), alpha = 0.5)
+plt.scatter(x, y, c = cmap(z), alpha = 0.5, s = 0.2)
+plt.xticks([], [])
+plt.yticks([], [])
+plt.show()
+
+cmap = cm.Greys
+plt.scatter(x, y, c = cmap(z), alpha = 0.5, s = 0.2)
+plt.xticks([], [])
+plt.yticks([], [])
 plt.show()
 
