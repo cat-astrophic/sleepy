@@ -1,10 +1,13 @@
-# This script performs data prep for the sleepy time project
+# This script performs data prep for the sleepy time project and also creates a figure
 
 # Importing required modules
 
 import pandas as pd
 from geopy.geocoders import Nominatim
 import geopy.distance
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib import cm
 
 # Project directory
 
@@ -247,4 +250,46 @@ df = pd.concat([pd.Series(names, name = 'Name'), df], axis = 1)
 # Save prepped data to file
 
 df.to_csv(direc + 'data/data.csv', index = False)
+
+# Making the figure for the paper
+
+# Exponential decay function with time zones
+
+def decay(x, y):
+    
+    d = np.sqrt(x*x + y*y)
+        
+    if x < -0.5:
+        
+        decayed = np.exp(-d)
+        
+    else:
+        
+        decayed = np.exp(-.5*d)
+        
+    return decayed
+
+# Generating the data to plot
+
+x = [i / 1000 for i in range(-1000,1001)]*2001
+
+y = []
+
+for i in range(2001):
+    
+    for j in range(2001):
+        
+        y.append(x[i])
+
+z = []
+
+for i in range(len(x)):
+    
+    z.append(decay(x[i], y[i]))
+
+# Making the map
+
+cmap = cm.rainbow
+plt.scatter(x, y, c = cmap(z), alpha = 0.5)
+plt.show()
 
