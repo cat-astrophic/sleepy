@@ -129,7 +129,7 @@ dists <- c()
 
 for (i in 1:nrow(all.fips)) {
   
-  dists <- c(dists, min(all.fips$d1[i], all.fips$d2[i], all.fips$d3[i], all.fips$d4[i], all.fips$d5[i], all.fips$d6[i], all.fips$d7[i]))
+  dists <- c(dists, min(all.fips$d1[i], all.fips$d2[i], all.fips$d3[i], all.fips$d4[i]))
   
 }
 
@@ -142,8 +142,6 @@ sinks <- c()
 years <- c()
 
 for (i in 1:length(yrs)) {
-  
-  print(paste0('Prepping data.frame for ', yrs[i], '.......'))
   
   tmp1 <- all.fips %>% filter(f1 == 1)
   tmp2 <- all.fips %>% filter(f2 == 1)
@@ -190,8 +188,6 @@ net.flows2 <- c()
 
 for (i in 1:nrow(df)) {
   
-  print(paste0('Creating flows data for observation ', i, ' of 30120.......'))
-  
   tmp.in <- inflows %>% filter(FIPS_New == df$Sink[i]) %>% filter(FIPS_Old == df$Source[i]) %>% filter(Year == df$Year[i])
   tmp.out <- inflows %>% filter(FIPS_Old == df$Sink[i]) %>% filter(FIPS_New == df$Source[i]) %>% filter(Year == df$Year[i])
   
@@ -227,8 +223,6 @@ fips.inflow2 <- c()
 
 for (i in 1:nrow(df2)) {
   
-  print(paste0('Creating flows data for observation ', i, ' of 1030.......'))
-  
   tmp.in <- inflows %>% filter(FIPS_New == df2$FIPS[i]) %>% filter(Year == df2$Year[i])
   tmp.out <- inflows %>% filter(FIPS_Old == df2$FIPS[i]) %>% filter(Year == df2$Year[i])
   
@@ -255,8 +249,6 @@ fips.pops <- c()
 
 for (i in 1:length(unique(all.fips$GEOID))) {
   
-  print(paste0('Collecting population data for county ', i, ' of 103.......'))
-  
   x <- unique(all.fips$GEOID)[i]
   s <- substr(x, 1, 2)
   c <- substr(x, 3, 5)
@@ -273,8 +265,6 @@ pops1 <- c()
 
 for (i in 1:nrow(df)) {
   
-  print(paste0('Collecting population data for county ', i, ' of 30120.......'))
-  
   tmp <- pop.df %>% filter(FIPS == df$Sink[i])
   pops1 <- c(pops1, tmp$POP)
   
@@ -283,8 +273,6 @@ for (i in 1:nrow(df)) {
 pops2 <- c()
 
 for (i in 1:nrow(df2)) {
-  
-  print(paste0('Collecting population data for county ', i, ' of 1030.......'))
   
   tmp <- pop.df %>% filter(FIPS == df2$FIPS[i])
   pops2 <- c(pops2, tmp$POP)
@@ -327,8 +315,6 @@ df.tz <- c()
 
 for (i in 1:nrow(df)) {
   
-  print(paste0('Creating TZ variable for county ', i, ' of 30120.......'))
-  
   df.tz <- c(df.tz, all.fips[which(all.fips$GEOID == df$Sink[i]),]$TZ[1])
 
 }
@@ -336,8 +322,6 @@ for (i in 1:nrow(df)) {
 df2.tz <- c()
 
 for (i in 1:nrow(df2)) {
-  
-  print(paste0('Creating TZ variable for county ', i, ' of 1030.......'))
   
   df2.tz <- c(df2.tz, all.fips[which(all.fips$GEOID == df2$FIPS[i]),]$TZ[1])
 
@@ -352,8 +336,6 @@ distf <- c()
 
 for (i in 1:nrow(df)) {
   
-  print(paste0('Creating Distance variable for county ', i, ' of 30120.......'))
-  
   distf <- c(distf, all.fips[which(all.fips$GEOID == df$Sink[i]),]$Distance[1])
   
 }
@@ -361,8 +343,6 @@ for (i in 1:nrow(df)) {
 distf2 <- c()
 
 for (i in 1:nrow(df2)) {
-  
-  print(paste0('Creating Distance variable for county ', i, ' of 1030.......'))
   
   distf2 <- c(distf2, all.fips[which(all.fips$GEOID == df2$FIPS[i]),]$Distance[1])
   
@@ -380,8 +360,6 @@ i4 <- c()
 
 for (i in 1:nrow(df)) {
   
-  print(paste0('Creating city indicator variable for county ', i, ' of 30120.......'))
-  
   i1 <- c(i1, all.fips[which(all.fips$GEOID == df$Sink[i]),]$f1[1])
   i2 <- c(i2, all.fips[which(all.fips$GEOID == df$Sink[i]),]$f2[1])
   i3 <- c(i3, all.fips[which(all.fips$GEOID == df$Sink[i]),]$f3[1])
@@ -395,8 +373,6 @@ j3 <- c()
 j4 <- c()
 
 for (i in 1:nrow(df2)) {
-  
-  print(paste0('Creating city indicator variable for county ', i, ' of 1030.......'))
   
   j1 <- c(j1, all.fips[which(all.fips$GEOID == df2$FIPS[i]),]$f1[1])
   j2 <- c(j2, all.fips[which(all.fips$GEOID == df2$FIPS[i]),]$f2[1])
@@ -513,8 +489,6 @@ s1 <- c()
 
 for (i in 1:nrow(df)) {
   
-  print(paste0('Creating state factor for county ', i, ' of 26250.......'))
-  
   s1 <- c(s1, all.fips[which(all.fips$GEOID == df$Sink[i]),]$STATEFP[1])
   
 }
@@ -523,8 +497,6 @@ s2 <- c()
 
 for (i in 1:nrow(df2)) {
   
-  print(paste0('Creating state factor variable for county ', i, ' of 900.......'))
-  
   s2 <- c(s2, all.fips[which(all.fips$GEOID == df2$FIPS[i]),]$STATEFP[1])
   
 }
@@ -532,23 +504,38 @@ for (i in 1:nrow(df2)) {
 df$State <- s1
 df2$State <- s2
 
+# Creating a county-to-county distance variable for addressing moving costs
+
+pw.dists <- c()
+
+for (i in 1:nrow(df)) {
+  
+  a <- all.fips[which(all.fips$GEOID == df$Sink[i]),]$centroid
+  b <- all.fips[which(all.fips$GEOID == df$Source[i]),]$centroid
+  
+  pw.dists <- c(pw.dists, st_distance(a, b))
+  
+}
+
+df$Travel <- pw.dists / 100000
+
 # See if people prefer moving to / living in one side of the time zone boundary - flows are pairwise across sampled counties only
 
-pw1 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
-pw2 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
-pw3 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
-pw4 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
-pw5 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
-pw6 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df)
-pw7 <- lm(Y1 ~ TZ + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
+pw1 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
+pw2 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
+pw3 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
+pw4 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
+pw5 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
+pw6 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df)
+pw7 <- lm(Y1 ~ TZ + Travel + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
 
-ppw1 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
-ppw2 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
-ppw3 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
-ppw4 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
-ppw5 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
-ppw6 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df)
-ppw7 <- lm(Y2 ~ TZ + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
+ppw1 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
+ppw2 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
+ppw3 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
+ppw4 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
+ppw5 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
+ppw6 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df)
+ppw7 <- lm(Y2 ~ TZ + Travel + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
 
 pw1x <- coeftest(pw1, vcov. = vcovCL(pw1, type = 'HC1'))
 pw2x <- coeftest(pw2, vcov. = vcovCL(pw2, type = 'HC1'))
@@ -570,21 +557,21 @@ ppw7x <- coeftest(ppw7, vcov. = vcovCL(ppw7, type = 'HC1'))
 
 df0 <- df %>% filter(Y1 != 0)
 
-sg1 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M3 == 1),])
-sg2 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1),])
-sg3 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M2 == 1),])
-sg4 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M4 == 1),])
-sg5 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1 | df0$M3 == 1),])
-sg6 <- lm(Y1 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0)
-sg7 <- lm(Y1 ~ TZ + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df0)
+sg1 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M3 == 1),])
+sg2 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1),])
+sg3 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M2 == 1),])
+sg4 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M4 == 1),])
+sg5 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1 | df0$M3 == 1),])
+sg6 <- lm(Y1 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0)
+sg7 <- lm(Y1 ~ TZ + Travel + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df0)
 
-ssg1 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M3 == 1),])
-ssg2 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1),])
-ssg3 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M2 == 1),])
-ssg4 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M4 == 1),])
-ssg5 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1 | df0$M3 == 1),])
-ssg6 <- lm(Y2 ~ TZ + factor(State) + factor(Sink) + factor(Source) + M3 + M1 + M2 + M4 + factor(Year), data = df0)
-ssg7 <- lm(Y2 ~ TZ + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df0)
+ssg1 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M3 == 1),])
+ssg2 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1),])
+ssg3 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M2 == 1),])
+ssg4 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M4 == 1),])
+ssg5 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df0[which(df0$M1 == 1 | df0$M3 == 1),])
+ssg6 <- lm(Y2 ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + M3 + M1 + M2 + M4 + factor(Year), data = df0)
+ssg7 <- lm(Y2 ~ TZ + Travel + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df0)
 
 sg1x <- coeftest(sg1, vcov. = vcovCL(sg1, type = 'HC1'))
 sg2x <- coeftest(sg2, vcov. = vcovCL(sg2, type = 'HC1'))
@@ -672,21 +659,21 @@ liin7x <- coeftest(liin7, vcov. = vcovCL(liin7, type = 'HC1'))
 
 # You know what, let's log these too; I'm [on a] hot [streak]
 
-lpw1 <- lm(log(Y1+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
-lpw2 <- lm(log(Y1+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
-lpw3 <- lm(log(Y1+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
-lpw4 <- lm(log(Y1+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
-lpw5 <- lm(log(Y1+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
+lpw1 <- lm(log(Y1+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
+lpw2 <- lm(log(Y1+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
+lpw3 <- lm(log(Y1+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
+lpw4 <- lm(log(Y1+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
+lpw5 <- lm(log(Y1+1) ~ TZ + Travel + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
 lpw6 <- lm(log(Y1+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df)
-lpw7 <- lm(log(Y1+1) ~ TZ + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
+lpw7 <- lm(log(Y1+1) ~ TZ + Travel + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
 
-lppw1 <- lm(log(Y2+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
-lppw2 <- lm(log(Y2+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
-lppw3 <- lm(log(Y2+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
-lppw4 <- lm(log(Y2+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
-lppw5 <- lm(log(Y2+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
-lppw6 <- lm(log(Y2+1) ~ TZ + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df)
-lppw7 <- lm(log(Y2+1) ~ TZ + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
+lppw1 <- lm(log(Y2+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M3 == 1),])
+lppw2 <- lm(log(Y2+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1),])
+lppw3 <- lm(log(Y2+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M2 == 1),])
+lppw4 <- lm(log(Y2+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M4 == 1),])
+lppw5 <- lm(log(Y2+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df[which(df$M1 == 1 | df$M3 == 1),])
+lppw6 <- lm(log(Y2+1) ~ TZ + Travel + factor(State) + factor(Sink) + factor(Source) + factor(Year), data = df)
+lppw7 <- lm(log(Y2+1) ~ TZ + Travel + M3 + M1 + M2 + M4 + factor(Sink) + factor(Source) + factor(Year), data = df)
 
 lpw1x <- coeftest(lpw1, vcov. = vcovCL(lpw1, type = 'HC1'))
 lpw2x <- coeftest(lpw2, vcov. = vcovCL(lpw2, type = 'HC1'))
@@ -711,9 +698,6 @@ stargazer(ppw1x, ppw2x, ppw3x, ppw4x, ppw5x, ppw6x, ppw7x, type = 'text', omit =
 
 stargazer(sg1x, sg2x, sg3x, sg4x, sg5x, sg6x, sg7x, type = 'text', omit = c('Sink', 'Source', 'Year', 'State'))
 stargazer(ssg1x, ssg2x, ssg3x, ssg4x, ssg5x, ssg6x, ssg7x, type = 'text', omit = c('Sink', 'Source', 'Year', 'State'))
-
-stargazer(tf1x, tf2x, tf3x, tf4x, tf5x, tf6x, tf7x, type = 'text', omit = c('FIPS', 'Year', 'State'))
-stargazer(ttf1x, ttf2x, ttf3x, ttf4x, ttf5x, ttf6x, ttf7x, type = 'text', omit = c('FIPS', 'Year', 'State'))
 
 stargazer(in1x, in2x, in3x, in4x, in5x, in6x, in7x, type = 'text', omit = c('FIPS', 'Year', 'State'))
 stargazer(iin1x, iin2x, iin3x, iin4x, iin5x, iin6x, iin7x, type = 'text', omit = c('FIPS', 'Year', 'State'))
