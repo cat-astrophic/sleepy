@@ -164,6 +164,10 @@ worm <- xxx[snoopy,]
 droop <- unique(worm$FIPS)
 dfx <- dfx %>% filter(! FIPS %in% droop)
 
+# Removing data prior to 2004 so no additional time zone changes occur in the sample
+
+dfx <- dfx %>% filter(Year > 3)
+
 # Running regressions
 
 mod1 <- lm(log(Jobs + 1) ~ Treated*Post + factor(Year) + factor(FIPS) + factor(NAICS), data = dfx)
@@ -181,7 +185,7 @@ stargazer(mod1x, mod2x, mod3x, type = 'text', omit.stat = c('f', 'ser'), omit = 
 
 # Making a data.frame of changes in jobs
 
-dfxx <- dfx %>% filter(Year > 0)
+dfxx <- dfx %>% filter(Year > 4)
 
 change.jobs <- c()
 
