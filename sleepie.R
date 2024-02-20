@@ -145,10 +145,6 @@ for (i in 1:length(poop)) {
 
 rdf$Time_Zones <- duke
 
-# Adjusting the distance variable
-
-rdf$Distance <- rdf$Distance * 100
-
 # Running main regressions
 
 mod1 <- lm(log(Seconds) ~ Treated*Post + factor(Event) + Female + log(Age) + factor(Year) + factor(Runner_ID), data = rdf)
