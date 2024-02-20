@@ -763,3 +763,23 @@ colnames(sumdat2) <- c('Inflow (Filers)', 'Inflow (All)', 'Inflow per capita (Fi
 datasummary_skim(sumdat, fmt = '%.3f')
 datasummary_skim(sumdat2, fmt = '%.3f')
 
+# Plotting the pairwise travel distances between county centroids from the pairwise net flows models
+
+df$XTravel <- df$Travel * 100000 / 1000
+  
+ggplot(data = df, aes(x = XTravel)) +
+  geom_histogram(color = 'red4', fill = 'orange', bins = 100) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle('Histogram of the Distance Between County Centroids within the Same Metro Area') + 
+  xlab('Distance (kilometers)') + 
+  ylab('')
+
+ggplot(data = df[which(df$Year == '2021'),], aes(x = XTravel)) +
+  geom_histogram(color = 'red4', fill = 'orange', bins = 100) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ggtitle('Histogram of the Distance Between County Centroids within the Same Metro Area') + 
+  xlab('Distance (kilometers)') + 
+  ylab('')
+
