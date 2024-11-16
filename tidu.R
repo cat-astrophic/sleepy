@@ -7,6 +7,7 @@ library(tidycensus)
 library(stargazer)
 library(geomander)
 library(tinytiger)
+library(geojsonsf)
 library(sandwich)
 library(leaflet)
 library(ggplot2)
@@ -21,244 +22,167 @@ library(sf)
 
 direc <- 'D:/sleepy/'
 
-# Begin to get data for desired states
+# Reading in the land cover data
 
-all.fips <- counties(state = NULL, year = 2021)
+trees <- read.csv(paste0(direc, 'data/county_level_proportions_2001_2011_2021.csv'))
 
-keep.fips <- c('01', '12', '13', '21', '37', '47')
+# Defining which counties are border counties and assigning treatment
 
-all.fips <- all.fips %>% filter(STATEFP %in% keep.fips)
+tz <- geojson_sf(paste0(direc, 'data/NTAD_Time_Zones_873827312334388986.geojson'))
 
-# Further subset for desired counties
+cx <- counties()
 
-msas <- c('12073', '13215', '47065', '47093')
+fips <- c()
 
-all.fips$centroid <- st_centroid(all.fips$geometry)
+for (i in 1:nrow(trees)) {
+  
+  if (trees$County[i] < 10000) {
+    
+    fips <- c(fips, paste0('0', as.character(trees$County[i])))
+    
+  } else {
+    
+    fips <- c(fips, as.character(trees$County[i]))
+    
+  }
+  
+}
 
-cdf <- all.fips %>% filter(GEOID %in% msas)
+trees$GEOID <- fips
 
-d1 <- c()
-d2 <- c()
-d3 <- c()
-d4 <- c()
+cx <- st_transform(cx, crs = st_crs(tz))
 
-for (i in 1:nrow(all.fips)) {
+trees <- left_join(trees, cx, by = c('GEOID'))
+
+trees <- st_as_sf(trees)
+trees <- st_transform(trees, crs = st_crs(tz))
+
+x <- as.data.frame(cbind(trees$INTPTLON, trees$INTPTLAT))
+colnames(x) <- c('LON', 'LAT')
+x$LON <- -1 * as.numeric(substr(x$LON, 2, nchar(x$LON)))
+x$LAT <- as.numeric(substr(x$LAT, 2, nchar(x$LAT)))
+x <- st_as_sf(x, coords = c('LON', 'LAT')) %>% st_set_crs(4326)
+
+sf_use_s2(FALSE)
+
+w <- c() # I was impatient and this was slower than I could handle, so I stopped, restarted, and visualized progress
+
+for (i in 1:(nrow(x)/3)) {
   
   print(i)
-  
-  d1 <- c(d1, st_distance(cdf$centroid[1], all.fips$centroid[i]))
-  d2 <- c(d2, st_distance(cdf$centroid[2], all.fips$centroid[i]))
-  d3 <- c(d3, st_distance(cdf$centroid[3], all.fips$centroid[i]))
-  d4 <- c(d4, st_distance(cdf$centroid[4], all.fips$centroid[i]))
+  w <- c(w, st_within(x$geometry[i], tz$geometry))
   
 }
 
-f1 <- as.integer(d1 < 100000)
-f2 <- as.integer(d2 < 100000)
-f3 <- as.integer(d3 < 100000)
-f4 <- as.integer(d4 < 100000)
+ww <- c() # I'm not re-running the last loop
 
-all.fips$f1 <- f1
-all.fips$f2 <- f2
-all.fips$f3 <- f3
-all.fips$f4 <- f4
-
-all.fips$d1 <- d1
-all.fips$d2 <- d2
-all.fips$d3 <- d3
-all.fips$d4 <- d4
-
-all.fips$Flag <- as.integer(f1 + f2 + f3 + f4 > 0)
-
-# Remove non-msa cities
-
-all.fips <- all.fips %>% filter(Flag == 1)
-
-# Defining the time zone variable
-
-fancy.pants.tn <- c('47065', '47129', '47013', '47123', '47105', '47089', '47173', '47009',
-                    '47107', '47145', '47093', '47029', '47063', '47025', '47143', '47057',
-                    '47011', '47121', '47155', '47139', '47001', '47151', '47063', '47067')
-
-fancy.pants.fl <- c('12129', '12037', '12065', '12123', '12079', '12077', '12039', '12073')
-
-fancy.pants.ky <- all.fips[which(all.fips$STATEFP == '21'),]$GEOID
-fancy.pants.ga <- all.fips[which(all.fips$STATEFP == '13'),]$GEOID
-fancy.pants.nc <- all.fips[which(all.fips$STATEFP == '37'),]$GEOID
-
-fancy.pants <- c(fancy.pants.tn, fancy.pants.ky, fancy.pants.ga, fancy.pants.nc, fancy.pants.fl)
-
-all.fips$TZ <- as.integer(all.fips$GEOID %in% fancy.pants)
-
-# Prepping al.fips for transition to panel data
-
-all.fips <- rbind(all.fips, all.fips, all.fips, all.fips, all.fips, all.fips, all.fips, all.fips, all.fips, all.fips)
-
-# Add house price / rent data to all.fips
-
-values <- c()
-years <- c()
-
-for (y in 2015:2021) {
+for (i in 1:length(w)) {
   
-  data <- get_acs(geography = 'county', state = c('AL', 'GA', 'FL', 'TN', 'KY', 'NC'), year = y, variables = c('DP04_0089'))
-  
-  for (i in 1:(nrow(all.fips)/7)) {
-    
-    tmp <- data %>% filter(GEOID == all.fips$GEOID[i])
-    
-    values <- c(values, tmp$estimate[1])
-    years <- c(years, y)
-    
-  }
+  ww <- c(ww, w[[i]][1])
   
 }
 
-all.fips$Value <- values
-all.fips$Year <- years
+trees$TZ_ID <- c(ww, ww, ww)
+trees$TZ <- tz$zone[trees$TZ_ID]
 
-# Add population (housing demand) data to all.fips
+# Filter out 2001 and 2011 data
 
-pops <- c()
+trees <- trees %>% filter(Year > 2011)
 
-for (y in 2015:2021) {
-  
-  data <- get_acs(geography = 'county', state = c('AL', 'GA', 'FL', 'TN', 'KY', 'NC'), year = y, variables = c('B01003_001'))
-  
-  for (i in 1:(nrow(all.fips)/7)) {
-    
-    tmp <- data %>% filter(GEOID == all.fips$GEOID[i])
-    
-    pops <- c(pops, tmp$estimate[1])
-    
-  }
-  
-}
+# Note :: below is for KY south for the E/C boundary
+# Note :: Gulf County, FL omitted because it splits time zones
 
-all.fips$Population <- pops
+keep.ec.e <- c(12037, 12077, 12039, 13099, 13061, 13253, 13239, 13259, 13215, 13053, 13145, 13149, 13285, 13233, 13143, 13045, 13115, 13055, 13083, 13087, 13295, 47065, 47143, 47145, 47151, 47129, 21231, 21199, 21147, 21217, 21045, 21123, 21093, 21163)
+keep.ec.c <- c(12063, 12013, 1067, 1069, 1005, 1017, 1113, 1081, 1029, 1111, 1019, 1049, 1071, 47007, 47115, 47153, 47035, 47137, 47049, 21207, 21001, 21087, 21085, 21099, 21027)
 
-# Add housing units (supply) data to all.fips
+# Note :: Stanley County, SD and Cherry County, NE omitted because they splits time zones 
 
-units <- c()
+keep.cm.c <- c(46021, 46129, 46107, 46065, 46119, 46075, 46121, 46095, 31171, 31117, 31111, 31085, 31087, 20109, 20093, 20203, 20193)
+keep.cm.m <- c(46031, 46041, 46071, 46055, 46007, 31005, 31091, 31029, 31057, 31101, 31135, 20199, 20181, 20071, 20075)
 
-for (y in 2015:2021) {
-  
-  data <- get_acs(geography = 'county', state = c('AL', 'GA', 'FL', 'TN', 'KY', 'NC'), year = y, variables = c('DP04_0001'))
-  
-  for (i in 1:(nrow(all.fips)/7)) {
-    
-    tmp <- data %>% filter(GEOID == all.fips$GEOID[i])
-    
-    units <- c(units, tmp$estimate[1])
-    
-  }
-  
-}
+ec.data <- trees %>% filter(County %in% c(keep.ec.e, keep.ec.c))
+cm.data <- trees %>% filter(County %in% c(keep.cm.c, keep.cm.m))
 
-all.fips$Units <- units
+ec.data$East <- as.integer(ec.data$County %in% keep.ec.e)
+cm.data$East <- as.integer(cm.data$County %in% keep.cm.c)
 
-# Add rent data to all.fips
+joint <- rbind(ec.data, cm.data)
 
-rent <- c()
+# Getting ACS data
 
-for (y in 2015:2021) {
-  
-  data <- get_acs(geography = 'county', state = c('AL', 'GA', 'FL', 'TN', 'KY', 'NC'), year = y, variables = c('DP04_0134'))
-  
-  for (i in 1:(nrow(all.fips)/7)) {
-    
-    tmp <- data %>% filter(GEOID == all.fips$GEOID[i])
-    
-    rent <- c(rent, tmp$estimate[1])
-    
-  }
-  
-}
-
-all.fips$Rent <- rent
-
-# Add income data to all.fips
-
+ren <- c()
+pop <- c()
+emp <- c()
 inc <- c()
+hun <- c()
+edu <- c()
 
-for (y in 2015:2021) {
+for (y in 2015:2022) {
   
-  data <- get_acs(geography = 'county', state = c('AL', 'GA', 'FL', 'TN', 'KY', 'NC'), year = y, variables = c('DP03_0062'))
+  covars <- get_acs(geography = 'county', year = y, variables = c('DP04_0134', 'DP03_0062', 'DP03_0009P', 'DP04_0001', 'DP05_0001', 'DP02_0068P'))
   
-  for (i in 1:(nrow(all.fips)/7)) {
+  for (i in 1:nrow(joint)) {
     
-    tmp <- data %>% filter(GEOID == all.fips$GEOID[i])
+    print(paste0('Checking observation ', i, ' of ', nrow(joint), '.......'))
     
-    inc <- c(inc, tmp$estimate[1])
+    tmp <- covars[which(covars$GEOID == joint$GEOID[i]),]
+    
+    tmp.ren <- tmp %>% filter(variable == 'DP04_0134')
+    tmp.inc <- tmp %>% filter(variable == 'DP03_0062')
+    tmp.emp <- tmp %>% filter(variable == 'DP03_0009P')
+    tmp.pop <- tmp %>% filter(variable == 'DP05_0001')
+    tmp.hun <- tmp %>% filter(variable == 'DP04_0001')
+    tmp.edu <- tmp %>% filter(variable == 'DP02_0068P')
+    
+    ren <- c(ren, mean(tmp.ren$estimate))
+    inc <- c(inc, mean(tmp.inc$estimate))
+    pop <- c(pop, mean(tmp.pop$estimate))
+    emp <- c(emp, mean(tmp.emp$estimate))
+    hun <- c(hun, mean(tmp.hun$estimate))
+    edu <- c(edu, mean(tmp.edu$estimate))
     
   }
   
 }
 
-all.fips$Income <- inc
+joint <- rbind(joint, joint, joint, joint, joint, joint, joint, joint)
 
-# Remove counties that are too close to other metro areas
+joint$Rents <- ren
+joint$Population <- pop
+joint$Income <- inc
+joint$Unemployment <- emp
+joint$Housing_Units <- hun
+joint$Education <- edu
+joint$Year <- c(rep(2015, nrow(joint)/8), rep(2016, nrow(joint)/8), rep(2017, nrow(joint)/8), rep(2018, nrow(joint)/8),
+                rep(2019, nrow(joint)/8), rep(2020, nrow(joint)/8), rep(2021, nrow(joint)/8), rep(2022, nrow(joint)/8))
 
-too.close.atl <- c()
+# Defining the time zone boundary
 
-atl <- st_sfc(st_point(x = c(-84.3877, 33.7488)))
-st_crs(atl) <- 4269
+border <- c()
 
-for (i in 1:nrow(all.fips)) {
+for (i in 1:nrow(joint)) {
   
-  if (st_distance(atl, all.fips$centroid[i]) < st_distance(cdf$centroid[1], all.fips$centroid[i])) {
+  if (joint$TZ[i] == 'Eastern') {
     
-    if (as.vector(st_distance(atl, all.fips$centroid[i])) < 100000) {
-      
-      too.close.atl <- c(too.close.atl, all.fips$GEOID[i])
-      
-    }
+    border <- c(border, 'Eastern-Central')
     
   }
   
-  if (st_distance(atl, all.fips$centroid[i]) < st_distance(cdf$centroid[2], all.fips$centroid[i])) {
+  if (joint$TZ[i] == 'Mountain') {
     
-    if (as.vector(st_distance(atl, all.fips$centroid[i])) < 100000) {
-      
-      too.close.atl <- c(too.close.atl, all.fips$GEOID[i])
-      
-    }
+    border <- c(border, 'Central-Mountain')
     
   }
   
-}
-
-too.close.ash <- c()
-
-ash <- st_sfc(st_point(x = c(-82.5515, 35.5951)))
-st_crs(ash) <- 4269
-
-for (i in 1:nrow(all.fips)) {
-  
-  if (st_distance(ash, all.fips$centroid[i]) < st_distance(cdf$centroid[3], all.fips$centroid[i])) {
+  if (joint$TZ[i] == 'Central') {
     
-    if (as.vector(st_distance(ash, all.fips$centroid[i])) < 100000) {
+    if (joint$East[i] == 1) {
       
-      too.close.ash <- c(too.close.ash, all.fips$GEOID[i])
+      border <- c(border, 'Central-Mountain')
       
-    }
-    
-  }
-  
-}
-
-too.close.nash <- c()
-
-nash <- st_sfc(st_point(x = c(-86.7816, 36.1627)))
-st_crs(nash) <- 4269
-
-for (i in 1:nrow(all.fips)) {
-  
-  if (st_distance(nash, all.fips$centroid[i]) < st_distance(cdf$centroid[1], all.fips$centroid[i])) {
-    
-    if (as.vector(st_distance(nash, all.fips$centroid[i])) < 100000) {
+    } else {
       
-      too.close.nash <- c(too.close.nash, all.fips$GEOID[i])
+      border <- c(border, 'Eastern-Central')
       
     }
     
@@ -266,66 +190,73 @@ for (i in 1:nrow(all.fips)) {
   
 }
 
-too.close.mon <- c()
+joint$Border <- border
 
-mon <- st_sfc(st_point(x = c(-86.3077, 32.3792)))
-st_crs(mon) <- 4269
+# Creating an indicator for GA and AL counties
 
-for (i in 1:nrow(all.fips)) {
+gaal <- c()
+
+for (i in 1:nrow(joint)) {
   
-  if (st_distance(mon, all.fips$centroid[i]) < st_distance(cdf$centroid[2], all.fips$centroid[i])) {
+  if (joint$County[i] < 10000) {
     
-    if (as.vector(st_distance(mon, all.fips$centroid[i])) < 100000) {
-      
-      too.close.mon <- c(too.close.mon, all.fips$GEOID[i])
-      
-    }
+    gaal <- c(gaal, 1)
+    
+  } else if (joint$STATEFP[i] == '13') {
+    
+    gaal <- c(gaal, 1)
+    
+  } else {
+    
+    gaal <- c(gaal, 0)
     
   }
   
 }
 
-all.fips <- all.fips %>% filter(! GEOID %in% too.close.atl) %>% filter(! GEOID %in% too.close.ash) %>% filter(! GEOID %in% too.close.nash) %>% filter(! GEOID %in% too.close.mon)
+joint$GAAL <- gaal
 
-# Running the regression
+joint2 <- joint %>% filter(gaal == 0)
 
-rent <- lm(log(Rent) ~ TZ + log(Population) + log(Units) + log(Income) + f1 + f2 + f3 + f4 + factor(STATEFP) + factor(GEOID) + factor(Year), data = all.fips)
+# Convert unemployment to [0,1]
 
-rentx <- coeftest(rent, vcov. = vcovCL(rent, type = 'HC1'))
+joint$Unemployment <- joint$Unemployment / 100
+joint2$Unemployment <- joint2$Unemployment / 100
 
-# Placebo tests
+# Running model-verification models
 
-set.seed(123456798)
+mod1 <- lm(log(Rents) ~ East + log(Housing_Units) + log(Population) + log(Income)
+           + Unemployment + factor(Border) + factor(STATEFP) + factor(Year), data = joint)
 
-all.fips$TZ2 <- sample(all.fips$TZ)
-all.fips$Rent2 <- sample(all.fips$Rent)
+mod2 <- lm(log(Rents) ~ East + log(Housing_Units) + log(Population) + log(Income)
+           + Unemployment + factor(Border) + factor(STATEFP) + factor(Year), data = joint2)
 
-rent2 <- lm(log(Rent) ~ TZ2 + log(Population) + log(Units) + log(Income) + f1 + f2 + f3 + f4 + factor(STATEFP) + factor(GEOID) + factor(Year), data = all.fips)
+xmod1 <- coeftest(mod1, vcov. = vcovCL(mod1, type = 'HC1'))
+xmod2 <- coeftest(mod2, vcov. = vcovCL(mod2, type = 'HC1'))
 
-rent2x <- coeftest(rent2, vcov = vcovCL(rent2, type = 'HC1'))
+stargazer(mod1, xmod1, mod2, xmod2, type = 'text', omit = c('STATEFP', 'Year', 'GEOID'))
 
-rent3 <- lm(log(Rent2) ~ TZ + log(Population) + log(Units) + log(Income) + f1 + f2 + f3 + f4 + factor(STATEFP) + factor(GEOID) + factor(Year), data = all.fips)
+# Summary statistics of this data
 
-rent3x <- coeftest(rent3, vcov = vcovCL(rent3, type = 'HC1'))
+sumdat <- as.data.frame(cbind(joint$East, joint$Rents, joint$Housing_Units, joint$Population, joint$Income, joint$Unemployment))
 
-stargazer(rent, rentx, rent2, rent2x, rent3, rent3x, type = 'text', omit = c('GEOID', 'Year', 'STATEFP'), omit.stat = c('f', 'ser'))
+sumdat$V2 <- log(sumdat$V2)
+sumdat$V3 <- log(sumdat$V3)
+sumdat$V4 <- log(sumdat$V4)
+sumdat$V5 <- log(sumdat$V5)
 
-# Saving results
-
-write.csv(stargazer(rentx, rent2x, rent3x, omit.stat = c('f', 'ser'), omit = c('GEOID', 'Year', 'STATEFP')), paste0(direc, 'results/mechanism_results.txt'), row.names = FALSE)
-write.csv(stargazer(rent, rent2, rent3, omit.stat = c('f', 'ser'), omit = c('GEOID', 'Year', 'STATEFP'), type = 'text'), paste0(direc, 'results/mechanism_results_xxx.txt'), row.names = FALSE)
-
-# Summary statistics
-
-sumdat <- all.fips[,c(34,27,32,33,35,18:21)]
-
-colnames(sumdat) <- c('log(Rent)', 'Eastern Time Zone', 'log(Population)', 'log(Housing Units)', 'log(Income)',
-                      'Knoxville, TN Metro Area', 'Chattanooga, TN Metro Area', 'Columbus, GA Metro Area', 'Tallahassee, FL Metro Area')
-
-sumdat$`log(Rent)` <- log(sumdat$`log(Rent)`)
-sumdat$`log(Population)` <- log(sumdat$`log(Population)`)
-sumdat$`log(Housing Units)` <- log(sumdat$`log(Housing Units)`)
-sumdat$`log(Income)` <- log(sumdat$`log(Income)`)
+colnames(sumdat) <- c('East', 'log(Rent)', 'log(Housing Units)', 'log(Population)', 'log(Income)', 'Unemplyoment Rate')
 
 datasummary_skim(sumdat, fmt = '%.3f')
+
+# Creating a figure to motivate this
+
+j1 <- joint %>% filter(STATEFP %in% c('01', '12', '13', '21', '47'))
+j2 <- joint %>% filter(STATEFP %in% c('20', '31', '46'))
+
+pal1 <- colorNumeric(palette = c('Blue', 'White', 'Red'), domain = j1$Rents)
+pal2 <- colorNumeric(palette = c('Blue', 'White', 'Red'), domain = j2$Rents)
+
+leaflet(j1$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 1.0, color = 'black', fillColor = pal(j1$Rents))
+leaflet(j2$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 1.0, color = 'black', fillColor = pal(j2$Rents))
 
