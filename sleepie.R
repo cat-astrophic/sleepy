@@ -85,7 +85,7 @@ rdf$Post <- as.integer(rdf$Year > 2010)
 
 # Read in a shapefile for US time zones
 
-tz <- st_read(paste0(direc, 'data/Time_Zones/Time_Zones.shp'))
+tz <- st_read(paste0(direc, 'data/Time_Zones/World_Time_Zones.shp'))
 tz <- st_transform(tz, 4269)
 
 # Determine time zones for runners
@@ -634,7 +634,36 @@ mercy <- as.integer(nd$NAME == 'Mercer')
 
 nd_map <- leaflet(nd$geometry) %>% setView(lng = -100.33, lat = 47.43, zoom = 6) %>% addTiles() %>% 
   addPolygons(data = poopface, weight = .2, smoothFactor = 0.5, opacity = 1.0, fillOpacity = .2, color = 'black', fillColor = c('red', 'orange')) %>% 
-  addPolygons(weight = .2, smoothFactor = 0.5, opacity = 1.0, fillOpacity = mercy, color = 'black', fillColor = 'purple')
+  addPolygons(weight = .2, smoothFactor = 0.5, opacity = 1.0, fillOpacity = mercy, color = 'black', fillColor = 'purple') %>%
+  addCircleMarkers(lat = 46.80536, lng = -100.77969, color = 'black', fillColor = 'red', radius = 6.66, fillOpacity = 1)
 
 nd_map
+
+# Pre-trends check
+
+rdf$Cohort <- rdf$Year - 2011
+rdf$Cohort <- relevel(factor(rdf$Cohort), ref = '-1')
+
+emod1 <- lm(log(Seconds) ~ Treated*factor(Cohort) + factor(Event) + Female + log(Age) + factor(Year) + factor(Runner_ID), data = rdf)
+
+emod1x <- coeftest(emod1, vcov = vcovCL, cluster = ~City)
+
+stargazer(emod1, emod1x, type = 'text', omit = c('Year', 'Runner_ID'), omit.stat = c('f', 'ser'))
+
+tr <- c(-0.012, 0.009, 0.018, 0, 0.025, -0.024, -0.117, -0.049)
+se <- c(0.056, 0.060, 0.052, 0, 0.045, 0.071, 0.069, 0.052)
+
+pdf <- as.data.frame(cbind(c(2007:2014), tr, se))
+colnames(pdf) <- c('Year', 'B', 'SE')
+pdf$SE <- 1.96*pdf$SE
+
+ggplot(pdf, aes(x = Year, y = B)) +
+  geom_point() +
+  geom_errorbar( aes(ymin = B-SE, ymax = B+SE), width = 0.2) +
+  geom_hline(yintercept = 0, size = 1) +
+  labs(x = 'Year', y = 'Treatment Effect', title = 'Event Study Coefficients') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylim(c(-0.3,0.2)) +
+  scale_x_continuous(breaks = c(2007:2014))
 
