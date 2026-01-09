@@ -234,7 +234,40 @@ mod2 <- lm(log(Rents) ~ East + log(Housing_Units) + log(Population) + log(Income
 xmod1 <- coeftest(mod1, vcov. = vcovCL(mod1, type = 'HC1'))
 xmod2 <- coeftest(mod2, vcov. = vcovCL(mod2, type = 'HC1'))
 
-stargazer(mod1, xmod1, mod2, xmod2, type = 'text', omit = c('STATEFP', 'Year', 'GEOID'))
+stargazer(mod1, xmod1, mod2, xmod2, type = 'text', omit = c('STATEFP', 'Year', 'GEOID'), omit.stat = c('f', 'ser'))
+
+# Placebo testing
+
+set.seed(42069)
+
+# Randomizing treatment
+
+vals <- runif(nrow(joint))
+joint$Placebo <- as.integer(vals >= .5)
+
+pmod1 <- lm(log(Rents) ~ Placebo + log(Housing_Units) + log(Population) + log(Income)
+            + Unemployment + factor(Border) + factor(STATEFP) + factor(Year), data = joint)
+
+xpmod1 <- coeftest(pmod1, vcov. = vcovCL(pmod1, type = 'HC1'))
+
+# Randomizing outcomes
+
+joint$Fake <- sample(joint$Rents)
+
+pmod2 <- lm(log(Fake) ~ East + log(Housing_Units) + log(Population) + log(Income)
+            + Unemployment + factor(Border) + factor(STATEFP) + factor(Year), data = joint)
+
+xpmod2 <- coeftest(pmod2, vcov. = vcovCL(pmod2, type = 'HC1'))
+
+# Results
+
+write.csv(stargazer(mod1, mod2, pmod1, pmod2, omit = c('STATEFP'), omit.stat = c('f', 'ser')),
+          paste0(direc, 'results/rent_placebo.txt'), row.names = FALSE)
+
+write.csv(stargazer(xmod1, xmod2, xpmod1, xpmod2, omit = c('STATEFP'), omit.stat = c('f', 'ser')),
+          paste0(direc, 'results/rent_placebo_robust.txt'), row.names = FALSE)
+
+stargazer(xmod1, xmod2, xpmod1, xpmod2, type = 'text', omit = c('STATEFP'), omit.stat = c('f', 'ser'))
 
 # Summary statistics of this data
 
@@ -251,12 +284,43 @@ datasummary_skim(sumdat, fmt = '%.3f')
 
 # Creating a figure to motivate this
 
-j1 <- joint %>% filter(STATEFP %in% c('01', '12', '13', '21', '47'))
-j2 <- joint %>% filter(STATEFP %in% c('20', '31', '46'))
+j1 <- joint %>% filter(STATEFP %in% c('01', '12', '13', '21', '47')) %>% filter(Year == 2022)
+j2 <- joint %>% filter(STATEFP %in% c('20', '31', '46')) %>% filter(Year == 2022)
 
 pal1 <- colorNumeric(palette = c('Blue', 'White', 'Red'), domain = j1$Rents)
 pal2 <- colorNumeric(palette = c('Blue', 'White', 'Red'), domain = j2$Rents)
 
-leaflet(j1$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 1.0, color = 'black', fillColor = pal(j1$Rents))
-leaflet(j2$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 1.0, color = 'black', fillColor = pal(j2$Rents))
+leaflet(j1$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 1.0, color = 'black', fillColor = pal1(j1$Rents))
+leaflet(j2$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 1.0, color = 'black', fillColor = pal2(j2$Rents))
+
+# Creating a figure to show the sample
+
+j1 <- joint %>% filter(STATEFP %in% c('01', '12', '13', '21', '47')) %>% filter(Year == 2022)
+j2 <- joint %>% filter(STATEFP %in% c('20', '31', '46')) %>% filter(Year == 2022)
+
+pal <- colorNumeric(palette = c('red4', 'orange'), domain = j1$East)
+
+leaflet(j1$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 0.666, color = 'black', fillColor = pal(j1$East))
+leaflet(j2$geometry) %>% addTiles() %>% addPolygons(weight = 1.0, smoothFactor = 1.0, opacity = 1.0, fillOpacity = 0.666, color = 'black', fillColor = pal(j2$East))
+
+# Running model-verification models with RUC codes for a reviewer
+
+ruc <- read.csv(paste0(direc, 'data/Ruralurbancontinuumcodes2023.csv'))
+ruc <- ruc %>% filter(Attribute == 'RUCC_2023')
+ruc <- ruc[,c(1,5)]
+colnames(ruc) <- c('County', 'RUC')
+
+joint <- left_join(joint, ruc, by = 'County')
+joint2 <- left_join(joint2, ruc, by = 'County')
+
+rucmod1 <- lm(log(Rents) ~ East + factor(RUC) + log(Housing_Units) + log(Population) + log(Income)
+              + Unemployment + factor(Border) + factor(STATEFP) + factor(Year), data = joint)
+
+rucmod2 <- lm(log(Rents) ~ East + factor(RUC) + log(Housing_Units) + log(Population) + log(Income)
+              + Unemployment + factor(Border) + factor(STATEFP)*factor(Year), data = joint)
+
+xrucmod1 <- coeftest(rucmod1, vcov. = vcovCL(rucmod1, type = 'HC1'))
+xrucmod2 <- coeftest(rucmod2, vcov. = vcovCL(rucmod2, type = 'HC1'))
+
+stargazer(rucmod1, xrucmod1, rucmod2, xrucmod2, type = 'text', omit = c('STATEFP', 'Year'), omit.stat = c('f', 'ser'))
 
